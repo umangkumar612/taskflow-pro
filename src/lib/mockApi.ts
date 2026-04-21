@@ -99,11 +99,14 @@ export const auth = {
     );
     if (!user) throw new Error("Invalid credentials");
     const token = makeToken(user);
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(stripPwd(user)));
+    if (isBrowser) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(stripPwd(user)));
+    }
     return delay({ token, user: stripPwd(user) });
   },
   logout() {
+    if (!isBrowser) return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(CURRENT_USER_KEY);
   },
@@ -111,7 +114,7 @@ export const auth = {
     return read<Omit<User, "password"> | null>(CURRENT_USER_KEY, null);
   },
   token(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return isBrowser ? localStorage.getItem(TOKEN_KEY) : null;
   },
 };
 
