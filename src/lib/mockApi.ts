@@ -28,7 +28,10 @@ const TASKS_KEY = "tf_tasks";
 const TOKEN_KEY = "tf_token";
 const CURRENT_USER_KEY = "tf_current_user";
 
+const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
+
 function read<T>(key: string, fallback: T): T {
+  if (!isBrowser) return fallback;
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -37,6 +40,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 function write<T>(key: string, val: T) {
+  if (!isBrowser) return;
   localStorage.setItem(key, JSON.stringify(val));
 }
 function uid() {
@@ -46,8 +50,9 @@ function delay<T>(val: T, ms = 350): Promise<T> {
   return new Promise((r) => setTimeout(() => r(val), ms));
 }
 
-// Seed an admin user on first load
+// Seed an admin user on first load (browser only)
 function seed() {
+  if (!isBrowser) return;
   const users = read<User[]>(USERS_KEY, []);
   if (users.length === 0) {
     const admin: User = {
@@ -94,11 +99,14 @@ export const auth = {
     );
     if (!user) throw new Error("Invalid credentials");
     const token = makeToken(user);
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(stripPwd(user)));
+    if (isBrowser) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(stripPwd(user)));
+    }
     return delay({ token, user: stripPwd(user) });
   },
   logout() {
+    if (!isBrowser) return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(CURRENT_USER_KEY);
   },
@@ -106,7 +114,7 @@ export const auth = {
     return read<Omit<User, "password"> | null>(CURRENT_USER_KEY, null);
   },
   token(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return isBrowser ? localStorage.getItem(TOKEN_KEY) : null;
   },
 };
 
